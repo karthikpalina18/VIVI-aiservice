@@ -31,8 +31,8 @@ if not os.path.exists(MODEL_FILENAME):
     download_from_gdrive(MODEL_GDRIVE_ID, MODEL_FILENAME)
     print("✅ Download complete.")
 
-# Absolute path to the model
-model_path = os.path.join(os.getcwd(), MODEL_FILENAME)
+# Set model_path to just the directory, not the full file path
+model_path = os.getcwd()
 
 # Load GPT4All - pass model_name instead of None
 model = GPT4All(model_name=MODEL_FILENAME, model_path=model_path, allow_download=False)
