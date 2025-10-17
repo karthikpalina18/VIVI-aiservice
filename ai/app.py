@@ -118,41 +118,36 @@ from waitress import serve
 
 app = Flask(__name__)
 
-# Force GPT4All to use current workspace instead of /root/.cache
-os.environ["XDG_CACHE_HOME"] = os.getcwd()
-
-# Model details
+# Model info
 MODEL_FILENAME = "ggml-nomic-ai-gpt4all-falcon-Q4_0.gguf"
 MODEL_GDRIVE_ID = "1hGfz95mD6JqYML3x205qqGr3cJ4yNOvY"
 
 def download_from_gdrive(file_id: str, dest_path: str, chunk_size: int = 32768):
-    """Download a Google Drive file given its file id."""
     URL = "https://docs.google.com/uc?export=download"
     session = requests.Session()
     response = session.get(URL, params={"id": file_id}, stream=True)
     token = None
-
-    # Handle Google Drive confirmation for large files
     for k, v in response.cookies.items():
         if k.startswith("download_warning"):
             token = v
-
     if token:
         response = session.get(URL, params={"id": file_id, "confirm": token}, stream=True)
-
     with open(dest_path, "wb") as f:
         for chunk in response.iter_content(chunk_size):
             if chunk:
                 f.write(chunk)
 
-# Ensure model exists in root
+# Download to root workspace if not exists
 if not os.path.exists(MODEL_FILENAME):
     print(f"Downloading model {MODEL_FILENAME} from Google Drive...")
     download_from_gdrive(MODEL_GDRIVE_ID, MODEL_FILENAME)
     print("✅ Download complete.")
 
-# Load the model from workspace
-model = GPT4All(model_name=MODEL_FILENAME, allow_download=False)
+# Absolute path to the model
+model_path = os.path.join(os.getcwd(), MODEL_FILENAME)
+
+# Load GPT4All from root workspace
+model = GPT4All(model_name=None, model_path=model_path, allow_download=False)
 
 @app.route("/")
 def home():
