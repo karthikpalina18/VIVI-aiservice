@@ -1,9 +1,13 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS  # Import CORS
 from gpt4all import GPT4All
 import os
 from waitress import serve
 
 app = Flask(__name__)
+
+# Enable CORS for all routes
+CORS(app, resources={r"/*": {"origins": "*"}})  # You can specify origins instead of '*'
 
 # Using a different model that's known to be available
 MODEL_FILENAME = "mistral-7b-openorca.Q4_0.gguf"
