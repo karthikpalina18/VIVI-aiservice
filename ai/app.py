@@ -14,7 +14,7 @@ def download_from_gdrive(file_id: str, dest_path: str, chunk_size: int = 32768):
     URL = "https://docs.google.com/uc?export=download"
     session = requests.Session()
     
-    # First request to get the warning token
+    # First request to get any warning token
     response = session.get(URL, params={"id": file_id}, stream=True)
     token = None
     
@@ -23,24 +23,31 @@ def download_from_gdrive(file_id: str, dest_path: str, chunk_size: int = 32768):
             token = v
             break
     
-    # If we got a token, use it; otherwise use the first response
+    # For large files, use confirm=t to bypass the virus scan warning
     if token:
         params = {"id": file_id, "confirm": token}
     else:
-        params = {"id": file_id}
+        params = {"id": file_id, "confirm": "t"}  # Bypass large file warning
     
-    response = session.get(URL, params=params, stream=True, timeout=30)
+    response = session.get(URL, params=params, stream=True, timeout=60)
     response.raise_for_status()
     
     # Verify we're actually downloading a binary file, not HTML
     content_type = response.headers.get('content-type', '').lower()
     if 'text/html' in content_type:
-        raise RuntimeError(f"Google Drive returned HTML instead of file. File ID may be invalid or not publicly accessible.")
+        raise RuntimeError("Google Drive returned HTML. File may be inaccessible or sharing settings incorrect.")
+    
+    total_size = int(response.headers.get('content-length', 0))
+    downloaded = 0
     
     with open(dest_path, "wb") as f:
         for chunk in response.iter_content(chunk_size):
             if chunk:
                 f.write(chunk)
+                downloaded += len(chunk)
+                if total_size:
+                    percent = (downloaded / total_size) * 100
+                    print(f"Downloaded: {percent:.1f}%", end="\r")
 
 # Download to root workspace if not exists
 if not os.path.exists(MODEL_FILENAME):
