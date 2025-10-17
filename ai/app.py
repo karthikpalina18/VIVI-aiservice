@@ -13,13 +13,30 @@ MODEL_GDRIVE_ID = "1hGfz95mD6JqYML3x205qqGr3cJ4yNOvY"
 def download_from_gdrive(file_id: str, dest_path: str, chunk_size: int = 32768):
     URL = "https://docs.google.com/uc?export=download"
     session = requests.Session()
+    
+    # First request to get the warning token
     response = session.get(URL, params={"id": file_id}, stream=True)
     token = None
+    
     for k, v in response.cookies.items():
         if k.startswith("download_warning"):
             token = v
+            break
+    
+    # If we got a token, use it; otherwise use the first response
     if token:
-        response = session.get(URL, params={"id": file_id, "confirm": token}, stream=True)
+        params = {"id": file_id, "confirm": token}
+    else:
+        params = {"id": file_id}
+    
+    response = session.get(URL, params=params, stream=True, timeout=30)
+    response.raise_for_status()
+    
+    # Verify we're actually downloading a binary file, not HTML
+    content_type = response.headers.get('content-type', '').lower()
+    if 'text/html' in content_type:
+        raise RuntimeError(f"Google Drive returned HTML instead of file. File ID may be invalid or not publicly accessible.")
+    
     with open(dest_path, "wb") as f:
         for chunk in response.iter_content(chunk_size):
             if chunk:
