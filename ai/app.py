@@ -5,32 +5,48 @@ from waitress import serve
 
 app = Flask(__name__)
 
-# Model info
 MODEL_FILENAME = "ggml-nomic-ai-gpt4all-falcon-Q4_0.gguf"
+MODEL_URL = "https://gpt4all.io/models/ggml-nomic-ai-gpt4all-falcon-Q4_0.gguf"
 
-# Download model from Hugging Face (no need for manual download)
 def ensure_model():
-    """Download model from Hugging Face if not already present."""
+    """Download model if not already present."""
     model_path = os.path.join(os.getcwd(), MODEL_FILENAME)
     
     if os.path.exists(model_path):
-        print(f"✅ Found model file: {MODEL_FILENAME}")
+        size_mb = os.path.getsize(model_path) / (1024 * 1024)
+        print(f"✅ Found model file: {MODEL_FILENAME} ({size_mb:.0f}MB)")
         return model_path
     
-    print(f"🔄 Downloading model from Hugging Face...")
+    print(f"🔄 Downloading model from {MODEL_URL}...")
     try:
-        from huggingface_hub import hf_hub_download
+        import urllib.request
+        import shutil
         
-        path = hf_hub_download(
-            repo_id="TheBloke/Nomic-Falcon-3B-GGUF",
-            filename=MODEL_FILENAME,
-            cache_dir=os.getcwd(),
-            local_files_only=False
-        )
-        print("✅ Download complete.")
-        return path
+        def download_with_progress(url, filepath):
+            """Download with progress indicator"""
+            with urllib.request.urlopen(url) as response:
+                total_size = int(response.headers.get('content-length', 0))
+                downloaded = 0
+                chunk_size = 1024 * 1024  # 1MB chunks
+                
+                with open(filepath, 'wb') as f:
+                    while True:
+                        chunk = response.read(chunk_size)
+                        if not chunk:
+                            break
+                        f.write(chunk)
+                        downloaded += len(chunk)
+                        if total_size:
+                            percent = (downloaded / total_size) * 100
+                            mb_downloaded = downloaded / (1024 * 1024)
+                            mb_total = total_size / (1024 * 1024)
+                            print(f"Downloaded: {mb_downloaded:.0f}MB / {mb_total:.0f}MB ({percent:.1f}%)", end="\r")
+        
+        download_with_progress(MODEL_URL, model_path)
+        print("\n✅ Download complete.")
+        return model_path
     except Exception as e:
-        print(f"❌ Error downloading model: {e}")
+        print(f"\n❌ Error downloading model: {e}")
         raise
 
 # Ensure the model is downloaded before loading
