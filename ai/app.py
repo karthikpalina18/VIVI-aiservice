@@ -22,7 +22,7 @@ def ensure_model():
         from huggingface_hub import hf_hub_download
         
         path = hf_hub_download(
-            repo_id="nomic-ai/gpt4all-falcon",
+            repo_id="TheBloke/Nomic-Falcon-3B-GGUF",
             filename=MODEL_FILENAME,
             cache_dir=os.getcwd(),
             local_files_only=False
