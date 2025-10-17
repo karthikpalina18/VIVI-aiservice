@@ -2,3 +2,4 @@ flask
 gpt4all
 waitress
 huggingface-hub
+flask-cors
