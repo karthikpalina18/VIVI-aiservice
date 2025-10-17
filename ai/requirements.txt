@@ -1,4 +1,4 @@
-Flask==3.0.0
+flask
 gpt4all
-requests
 waitress
+huggingface-hub
