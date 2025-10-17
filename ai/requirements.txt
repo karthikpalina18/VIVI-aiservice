@@ -3,4 +3,5 @@ gpt4all
 waitress
 huggingface-hub
 flask_cors
+threading
 
